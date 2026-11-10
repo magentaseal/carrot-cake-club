@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrot Cake XP - Rating Club</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <!-- Leaflet CSS & JS for Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Firebase SDK Modules for Realtime Cloud Sync -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      setDoc, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Expose Firebase tools to the global window scope
+    window._firebaseInit = {
+      initializeApp,
+      getAuth,
+      signInAnonymously,
+      signInWithCustomToken,
+      getFirestore,
+      collection,
+      doc,
+      setDoc,
+      onSnapshot
+    };
+  </script>
+
+  <style>
+    /* Classic Windows XP Font & Base styling */
+    body {
+      font-family: 'Tahoma', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at 50% 10%, #3086eb 0%, #1e5cb3 55%, #0f3984 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    /* Windows XP Luna Blue Chrome Window Styling */
+    .xp-window {
+      background: #ECE9D8;
+      border: 3px solid #0055ea;
+      border-top: none;
+      border-radius: 8px 8px 3px 3px;
+      box-shadow: 0 14px 28px rgba(0,0,0,0.45), 0 10px 10px rgba(0,0,0,0.35);
+    }
+
+    .xp-titlebar {
+      background: linear-gradient(180deg, #0058ee 0%, #3593ff 8%, #288eff 12%, #0055ea 45%, #0046d5 85%, #0030a5 100%);
+      color: white;
+      text-shadow: 1px 1px #001f5c;
+      border-radius: 6px 6px 0 0;
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #002275;
+    }
+
+    /* XP Window Controls */
+    .xp-ctrl-btn {
+      width: 21px;
+      height: 21px;
+      border-radius: 3px;
+      border: 1px solid #ffffff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 1px 1px 2px rgba(0,0,0,0.4);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 11px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .xp-btn-min, .xp-btn-max {
+      background: linear-gradient(180deg, #3c8df6 0%, #1763db 100%);
+    }
+    .xp-btn-close {
+      background: linear-gradient(180deg, #f27249 0%, #c43210 100%);
+    }
+    .xp-btn-close:hover {
+      background: linear-gradient(180deg, #ff8d69 0%, #e03f16 100%);
+    }
+
+    /* XP Buttons with authentic bevels */
+    .xp-button {
+      background: linear-gradient(180deg, #ffffff 0%, #ece9d8 10%, #d8d4c7 90%, #b8b3a4 100%);
+      border: 1px solid #003c74;
+      border-radius: 3px;
+      color: #000;
+      box-shadow: inset 1px 1px 0 #fff, 1px 1px 1px rgba(0,0,0,0.25);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.05s ease;
+    }
+    .xp-button:hover {
+      background: linear-gradient(180deg, #fff 0%, #f6f3e6 15%, #e5e0cf 85%, #cfc9ba 100%);
+    }
+    .xp-button:active {
+      background: #ded9ca;
+      box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4);
+      transform: translate(1px, 1px);
+    }
+    .xp-button-primary {
+      border: 1px solid #10723a;
+      background: linear-gradient(180deg, #5fe47e 0%, #34b355 45%, #249141 85%, #18712f 100%);
+      color: white;
+      text-shadow: 1px 1px 1px #0d4d1f;
+      font-weight: bold;
+    }
+    .xp-button-primary:hover {
+      background: linear-gradient(180deg, #74ea90 0%, #40c463 50%, #2ba54b 100%);
+    }
+
+    /* XP Start Button & Taskbar */
+    .xp-taskbar {
+      background: linear-gradient(180deg, #245edb 0%, #3f8cf3 9%, #245edb 18%, #245edb 92%, #1941a5 100%);
+      border-top: 1px solid #4a94f8;
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.3);
+    }
+    .xp-start-btn {
+      background: linear-gradient(180deg, #3bb33b 0%, #36a536 20%, #2f8e2f 70%, #236823 100%);
+      border: 1px solid #144914;
+      box-shadow: inset 1px 1px 1px rgba(255,255,255,0.7), 2px 2px 3px rgba(0,0,0,0.4);
+      border-radius: 0 12px 12px 0;
+      font-style: italic;
+      text-shadow: 1px 1px 2px #0a2d0a;
+    }
+
+    /* Custom Carrot Pin Badge */
+    .custom-marker-cake {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+      transition: transform 0.15s ease;
+      cursor: pointer;
+    }
+    .custom-marker-cake:hover {
+      transform: scale(1.18) translateY(-4px);
+    }
+
+    /* Custom XP Speech Balloon / Alert */
+    .xp-balloon {
+      background: #FFFFE1;
+      border: 1px solid #000000;
+      box-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+      border-radius: 4px;
+      position: fixed;
+      bottom: 40px;
+      right: 15px;
+      z-index: 1000;
+      max-width: 290px;
+      padding: 10px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 pb-12 flex flex-col justify-between">
+
+  <!-- ==================== SVG ASSET: USER'S HAND-DRAWN CARROT CAKE SLICE ==================== -->
+  <svg style="display: none;">
+    <defs>
+      <g id="cake-logo-art" viewBox="0 0 500 500">
+        <!-- Cream outline/frosting bottom & back edge -->
+        <path d="M 130 330 L 140 375 L 340 300 L 335 240 Z" fill="#F1D7B4" stroke="#E3C29D" stroke-width="6" stroke-linejoin="round" />
+        
+        <!-- Back triangle top surface (cake top) -->
+        <polygon points="190,110 320,180 145,280" fill="#B86C0B" stroke="#EED9B9" stroke-width="12" stroke-linejoin="round" />
+        
+        <!-- Lower crumb layer -->
+        <polygon points="145,280 320,180 330,285 150,385" fill="#BF7106" stroke="#BF7106" stroke-width="2" />
+        
+        <!-- Internal cream cheese frosting divider -->
+        <path d="M 148 315 L 325 215 L 327 235 L 149 335 Z" fill="#F4DCBC" stroke="#EAD0AE" stroke-width="2" stroke-linejoin="round" />
+        
+        <!-- Outer frosting crust outline (hand-drawn organic look) -->
+        <path d="M 190 110 
+                 C 230 130, 280 160, 320 180 
+                 C 328 220, 332 260, 335 295 
+                 C 290 320, 200 360, 145 385 
+                 C 140 330, 142 270, 145 280
+                 Z" 
+              fill="none" 
+              stroke="#F2DAC0" 
+              stroke-width="18" 
+              stroke-linecap="round" 
+              stroke-linejoin="round" />
+
+        <!-- Hand-drawn cute carrot on top of cake -->
+        <!-- Carrot Green Sprout -->
+        <path d="M 280 90 
+                 C 275 80, 285 68, 298 72 
+                 C 310 70, 315 85, 305 92 
+                 C 320 90, 325 105, 310 112 
+                 C 295 115, 285 102, 280 90 Z" 
+              fill="#28A745" 
+              stroke="#1E7E34" 
+              stroke-width="4" 
+              stroke-linejoin="round" />
+        
+        <!-- Orange Carrot Body -->
+        <path d="M 285 95 
+                 C 275 90, 245 110, 220 145 
+                 C 195 180, 185 195, 185 200 
+                 C 192 205, 215 190, 240 165 
+                 C 270 135, 295 110, 285 95 Z" 
+              fill="#FF8A3D" 
+              stroke="#E0691B" 
+              stroke-width="5" 
+              stroke-linejoin="round" />
+        
+        <!-- Carrot Texture Stripes -->
+        <path d="M 220 145 Q 228 150 234 148" stroke="#D95708" stroke-width="5" stroke-linecap="round" fill="none" />
+        <path d="M 235 130 Q 244 135 250 132" stroke="#D95708" stroke-width="5" stroke-linecap="round" fill="none" />
+        <path d="M 252 115 Q 262 120 268 117" stroke="#D95708" stroke-width="5" stroke-linecap="round" fill="none" />
+      </g>
+    </defs>
+  </svg>
+
+  <!-- ==================== MAIN WINDOW CONTAINER ==================== -->
+  <div class="max-w-6xl mx-auto w-full my-auto">
+    <div class="xp-window">
+
+      <!-- XP BLUE TITLE BAR -->
+      <div class="xp-titlebar">
+        <div class="flex items-center gap-2">
+          <!-- Logo in Title bar -->
+          <svg class="w-5 h-5 filter drop-shadow"><use href="#cake-logo-art"/></svg>
+          <span class="font-bold text-xs tracking-wide">Carrot Cake Map - Rating Club (London Edition)</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="alertXp('Minimized to tray.')" class="xp-ctrl-btn xp-btn-min">_</button>
+          <button onclick="alertXp('Carrot Cake XP is already maximized.')" class="xp-ctrl-btn xp-btn-max">□</button>
+          <button onclick="alertXp('System cannot terminate the Carrot Cake process.')" class="xp-ctrl-btn xp-btn-close">✕</button>
+        </div>
+      </div>
+
+      <!-- XP CLASSIC MENUBAR -->
+      <div class="bg-[#ECE9D8] px-3 py-1 flex items-center gap-4 text-xs border-b border-[#D4D0C8] text-stone-800">
+        <span class="hover:bg-[#316AC5] hover:text-white px-1.5 py-0.5 rounded-sm cursor-pointer" onclick="openAddModal()">File</span>
+        <span class="hover:bg-[#316AC5] hover:text-white px-1.5 py-0.5 rounded-sm cursor-pointer" onclick="centerMapOnCurrentView()">View</span>
+        <span class="hover:bg-[#316AC5] hover:text-white px-1.5 py-0.5 rounded-sm cursor-pointer" onclick="openAuthModal()">Users</span>
+        <span class="hover:bg-[#316AC5] hover:text-white px-1.5 py-0.5 rounded-sm cursor-pointer" onclick="showXpAbout()">Help</span>
+      </div>
+
+      <!-- XP USER PROFILE BANNER (TOP USER CARD) -->
+      <div class="p-3 bg-gradient-to-r from-[#5a8ee5] via-[#4682b4] to-[#7db9e8] text-white flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#003c74]">
+        <div class="flex items-center gap-3">
+          <!-- Windows XP User Picture with Custom Drawn Carrot Cake -->
+          <div id="currentUserAvatar" class="w-12 h-12 bg-white rounded-md p-1 shadow-md border-2 border-[#fff] flex items-center justify-center overflow-hidden">
+            <svg class="w-full h-full object-contain filter drop-shadow-sm"><use href="#cake-logo-art"/></svg>
+          </div>
+          <div>
+            <div class="font-bold text-sm tracking-wide flex items-center gap-1.5 text-white drop-shadow">
+              <span id="currentUserName">Emma C.</span>
+              <span id="currentUserBadge" class="text-[9px] bg-emerald-600 px-1.5 py-0.2 rounded font-mono uppercase tracking-wider text-white border border-emerald-400">Verified Taster</span>
+            </div>
+            <div class="text-[11px] text-amber-100 flex items-center gap-3 drop-shadow-sm mt-0.5">
+              <span>Security Level: <strong id="currentUserRole">Admin / Club Reviewer</strong></span>
+              <span>•</span>
+              <span>My Tastings: <strong id="userTotalTastings">2</strong></span>
+              <span>•</span>
+              <span id="authStatusText">Logged in</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Controls & Add Tasting Action Button -->
+        <div class="flex items-center gap-2">
+          <button id="authBtn" onclick="openAuthModal()" class="xp-button text-xs px-2.5 py-1">
+            <i class="ph ph-user-switch"></i> Switch / Log In
+          </button>
+          <button onclick="handleLogout()" id="logoutBtn" class="xp-button text-xs px-2 py-1">
+            <i class="ph ph-sign-out"></i> Log Off
+          </button>
+          <button onclick="checkAuthAndOpenAddModal()" class="xp-button xp-button-primary px-3 py-1 text-xs">
+            <svg class="w-3.5 h-3.5 mr-0.5"><use href="#cake-logo-art"/></svg>
+            <span>Add Tasting...</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- XP INTERACTIVE WORKSPACE (MAP + COMMUNITY REVIEWS PANEL) -->
+      <div class="p-3 bg-[#ECE9D8] grid grid-cols-1 lg:grid-cols-12 gap-3">
+
+        <!-- LEFT COLUMN: MAP CONTAINER (Windows XP Inset Frame) -->
+        <div class="lg:col-span-7 bg-white border-2 border-[#7F9DB9] rounded-sm shadow-inner flex flex-col">
+          <!-- Map Status Bar Strip -->
+          <div class="bg-[#F0EEE3] border-b border-[#D8D4C5] px-2.5 py-1 flex items-center justify-between text-[11px]">
+            <div class="flex items-center gap-2 text-stone-700">
+              <svg class="w-4 h-4"><use href="#cake-logo-art"/></svg>
+              <span class="font-bold">Global Carrot Cake Satellite Explorer</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="centerMapOnCurrentView()" class="xp-button py-0.5 px-2 text-[10px]">
+                <i class="ph ph-crosshair"></i> Recenter
+              </button>
+            </div>
+          </div>
+
+          <!-- Leaflet Map Canvas -->
+          <div id="map" class="w-full h-[430px] z-0"></div>
+          
+          <div class="bg-[#ECE9D8] px-2 py-1 text-[10px] text-stone-600 border-t border-[#D8D4C5] flex items-center justify-between">
+            <span>Click any cake pin to inspect community evaluations</span>
+            <span class="text-stone-500 italic">Click anywhere on map to select GPS coords for wizard</span>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: COMMUNITY REVIEWS EXPLORER PANEL -->
+        <div class="lg:col-span-5 flex flex-col gap-2">
+          <div class="bg-white border-2 border-[#7F9DB9] rounded-sm overflow-hidden flex flex-col h-full shadow-inner">
+            
+            <!-- Cafe Header Box -->
+            <div class="bg-[#ECE9D8] p-2.5 border-b border-[#ACA899]">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="text-[10px] uppercase font-bold text-blue-800 tracking-wider flex items-center gap-1">
+                    <i class="ph-fill ph-users-three"></i> Selected Cafe Diagnostics
+                  </div>
+                  <h3 id="panelCafeName" class="font-bold text-sm text-stone-900 leading-tight">Lumberjack Cafe</h3>
+                  <div id="panelCafeLocation" class="text-[11px] text-stone-600">Camberwell, SE5</div>
+                </div>
+                <div class="text-right">
+                  <span id="panelCafeRating" class="inline-block bg-[#0055ea] text-white font-bold text-xs px-2 py-0.5 rounded shadow">4.9 ★</span>
+                  <div id="panelReviewsCount" class="text-[10px] text-stone-500 mt-0.5">3 tasters reviewed</div>
+                </div>
+              </div>
+
+              <!-- Reviews Scope Toggle -->
+              <div class="mt-2 flex items-center justify-between pt-1 border-t border-[#D4D0C8] text-[11px]">
+                <span class="text-stone-600 font-semibold">Filter:</span>
+                <div class="flex gap-1">
+                  <button id="filterAllBtn" onclick="setReviewFilter('all')" class="xp-button text-[10px] py-0.5 px-2 font-bold bg-[#fff]">
+                    All Tasters
+                  </button>
+                  <button id="filterMineBtn" onclick="setReviewFilter('mine')" class="xp-button text-[10px] py-0.5 px-2">
+                    My Reviews Only
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reviews Scrollable List -->
+            <div id="reviewsContainer" class="p-2 space-y-2 overflow-y-auto max-h-[350px] bg-[#FAF9F5] divide-y divide-[#E0DFD8]">
+              <!-- Reviews rendered dynamically -->
+            </div>
+
+            <!-- Add Review To Current Cafe Footer -->
+            <div class="bg-[#ECE9D8] p-2 border-t border-[#ACA899] flex justify-between items-center text-xs">
+              <span class="text-[10px] text-stone-600">Tasted this slice too?</span>
+              <button onclick="openAddModalForCurrentCafe()" class="xp-button text-[11px] py-0.5 px-2">
+                <i class="ph-bold ph-pencil-simple"></i> Rate This Cafe
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- XP STATUS BAR FOOTER -->
+      <div class="bg-[#ECE9D8] border-t border-[#ACA899] px-3 py-1 flex items-center justify-between text-[11px] text-stone-600">
+        <div class="flex items-center gap-3">
+          <span>Total Club Ratings: <strong id="totalTastingsCount">14</strong></span>
+          <span>•</span>
+          <span>Database: <strong id="cloudStatusBadge" class="text-amber-600">CONNECTING...</strong></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span>London Sector [SE / E / W]</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== WINDOWS XP LOG ON DIALOG ==================== -->
+  <div id="authModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-[1px] z-50 flex items-center justify-center p-3">
+    <div class="xp-window w-full max-w-sm shadow-2xl">
+      <!-- Title Bar -->
+      <div class="xp-titlebar">
+        <div class="flex items-center gap-1.5">
+          <i class="ph ph-lock-key text-yellow-300"></i>
+          <span class="font-bold text-xs">Log On to Carrot Cake Club</span>
+        </div>
+        <button onclick="closeAuthModal()" class="xp-ctrl-btn xp-btn-close">✕</button>
+      </div>
+
+      <!-- Top Banner -->
+      <div class="bg-gradient-to-r from-[#003399] to-[#5b8fe5] p-3 text-white flex items-center gap-3 border-b-2 border-[#002266]">
+        <div class="w-10 h-10 bg-white/20 rounded p-1 border border-white/40 flex items-center justify-center">
+          <svg class="w-8 h-8"><use href="#cake-logo-art"/></svg>
+        </div>
+        <div>
+          <div class="font-bold text-xs tracking-wide">Windows XP Security</div>
+          <div class="text-[10px] text-blue-100">Select a verified reviewer account or type your club handle.</div>
+        </div>
+      </div>
+
+      <!-- Quick Switch Verified Users -->
+      <div class="p-3 bg-[#ECE9D8] space-y-3">
+        <div>
+          <div class="text-[11px] font-bold text-stone-700 mb-1.5">Select Registered Club Reviewer:</div>
+          <div class="space-y-1">
+            <button onclick="loginAsPreset('Emma C. (Admin)', 'Admin / Master Taster')" class="w-full text-left p-1.5 bg-white border border-[#7F9DB9] hover:bg-[#B5D5FF] flex items-center justify-between text-xs rounded-sm">
+              <span class="font-bold text-stone-800">Emma C. (Admin)</span>
+              <span class="text-[10px] text-blue-700">★ Admin</span>
+            </button>
+            <button onclick="loginAsPreset('David Miller', 'Verified Taster')" class="w-full text-left p-1.5 bg-white border border-[#7F9DB9] hover:bg-[#B5D5FF] flex items-center justify-between text-xs rounded-sm">
+              <span class="font-bold text-stone-800">David Miller</span>
+              <span class="text-[10px] text-stone-500">Member</span>
+            </button>
+            <button onclick="loginAsPreset('Clara S.', 'Verified Taster')" class="w-full text-left p-1.5 bg-white border border-[#7F9DB9] hover:bg-[#B5D5FF] flex items-center justify-between text-xs rounded-sm">
+              <span class="font-bold text-stone-800">Clara S.</span>
+              <span class="text-[10px] text-stone-500">Member</span>
+            </button>
+            <button onclick="loginAsPreset('Sophie Turner', 'Verified Taster')" class="w-full text-left p-1.5 bg-white border border-[#7F9DB9] hover:bg-[#B5D5FF] flex items-center justify-between text-xs rounded-sm">
+              <span class="font-bold text-stone-800">Sophie Turner</span>
+              <span class="text-[10px] text-stone-500">Member</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="relative flex py-1 items-center">
+          <div class="flex-grow border-t border-stone-300"></div>
+          <span class="flex-shrink mx-2 text-[10px] text-stone-500 uppercase">Or sign in with new handle</span>
+          <div class="flex-grow border-t border-stone-300"></div>
+        </div>
+
+        <!-- Custom Username Form -->
+        <form onsubmit="handleCustomLogin(event)" class="space-y-2">
+          <div>
+            <label class="block text-[11px] font-bold text-stone-700">Taster Handle:</label>
+            <input type="text" id="customUserHandle" placeholder="e.g. BakerBob" class="w-full text-xs p-1 border border-[#7F9DB9] rounded-sm bg-white" required>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-stone-700">Password / Pin:</label>
+            <input type="password" value="••••••••" placeholder="Optional" class="w-full text-xs p-1 border border-[#7F9DB9] rounded-sm bg-white">
+          </div>
+          <div class="flex justify-end gap-1.5 pt-1">
+            <button type="button" onclick="closeAuthModal()" class="xp-button text-xs py-1 px-3">Cancel</button>
+            <button type="submit" class="xp-button xp-button-primary text-xs py-1 px-3">Log On</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== ACCESS RESTRICTED / GUEST MODAL ==================== -->
+  <div id="accessDeniedModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-[1px] z-50 flex items-center justify-center p-3">
+    <div class="xp-window w-full max-w-sm shadow-2xl">
+      <div class="xp-titlebar">
+        <div class="flex items-center gap-1.5">
+          <i class="ph ph-warning-circle text-yellow-300"></i>
+          <span class="font-bold text-xs">Authorization Required</span>
+        </div>
+        <button onclick="closeAccessDeniedModal()" class="xp-ctrl-btn xp-btn-close">✕</button>
+      </div>
+      <div class="p-3 bg-[#ECE9D8] space-y-3">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-yellow-100 border border-yellow-400 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0 text-xl font-bold">
+            !
+          </div>
+          <div class="text-xs text-stone-800">
+            <strong>Access Denied:</strong> Only authorized club tasters may rate carrot cakes and publish sensory diagnostics.
+            <div class="mt-1 text-stone-600">Please log in to your reviewer account to proceed.</div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-1.5 pt-2 border-t border-[#D4D0C8]">
+          <button onclick="closeAccessDeniedModal()" class="xp-button text-xs py-1 px-3">Cancel</button>
+          <button onclick="closeAccessDeniedModal(); openAuthModal();" class="xp-button xp-button-primary text-xs py-1 px-3 font-bold">Log On Now...</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ADD TASTING WIZARD MODAL ==================== -->
+  <div id="addModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-[1px] z-50 flex items-center justify-center p-3">
+    <div class="xp-window w-full max-w-lg shadow-2xl">
+      <div class="xp-titlebar">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4"><use href="#cake-logo-art"/></svg>
+          <span class="font-bold text-xs">New Carrot Cake Tasting Wizard</span>
+        </div>
+        <button onclick="closeAddModal()" class="xp-ctrl-btn xp-btn-close">✕</button>
+      </div>
+
+      <div class="bg-gradient-to-r from-[#003399] to-[#3a75c4] p-3 text-white flex items-center gap-3 border-b-2 border-[#002266]">
+        <div class="w-9 h-9 bg-white/20 rounded p-1 border border-white/40 flex items-center justify-center">
+          <svg class="w-7 h-7"><use href="#cake-logo-art"/></svg>
+        </div>
+        <div>
+          <div class="font-bold text-xs tracking-wide">Sensory Benchmark Evaluation</div>
+          <div class="text-[10px] text-blue-100">Reviewing as: <strong id="modalReviewingAs" class="text-yellow-300">Emma C.</strong></div>
+        </div>
+      </div>
+
+      <form id="tastingForm" onsubmit="handleFormSubmit(event)" class="p-3 bg-[#ECE9D8] space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-stone-700 mb-0.5">Cafe / Bakery Name:</label>
+            <input type="text" id="formCafeName" required placeholder="e.g. Violet Cakes" class="w-full p-1 text-xs border border-[#7F9DB9] rounded-sm bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-700 mb-0.5">Neighborhood / City:</label>
+            <input type="text" id="formLocation" required placeholder="e.g. Hackney, E8" class="w-full p-1 text-xs border border-[#7F9DB9] rounded-sm bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block font-bold text-stone-700 mb-0.5">Latitude (GPS):</label>
+            <input type="number" step="any" id="formLat" required value="51.5435" class="w-full p-1 text-xs border border-[#7F9DB9] rounded-sm bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-700 mb-0.5">Longitude (GPS):</label>
+            <input type="number" step="any" id="formLng" required value="-0.0580" class="w-full p-1 text-xs border border-[#7F9DB9] rounded-sm bg-white">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-700 mb-0.5">Price / Slice:</label>
+            <input type="text" id="formPrice" value="£4.50" class="w-full p-1 text-xs border border-[#7F9DB9] rounded-sm bg-white">
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="bg-white p-2.5 border border-[#7F9DB9] rounded-sm space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-stone-700">Overall Rating (1 - 5 Stars):</span>
+            <span id="starValBadge" class="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded text-[11px] border border-blue-200">4.8 / 5.0 ★</span>
+          </div>
+          <input type="range" id="formOverall" min="1" max="5" step="0.1" value="4.8" oninput="document.getElementById('starValBadge').innerText = parseFloat(this.value).toFixed(1) + ' / 5.0 ★'" class="w-full accent-blue-600">
+
+          <div class="grid grid-cols-2 gap-3 pt-1">
+            <div>
+              <div class="flex justify-between text-[11px] text-stone-600 mb-0.5">
+                <span>Frosting Tanginess:</span>
+                <span id="frostingValBadge" class="font-bold">9/10</span>
+              </div>
+              <input type="range" id="formFrosting" min="1" max="10" value="9" oninput="document.getElementById('frostingValBadge').innerText = this.value + '/10'" class="w-full accent-blue-600">
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] text-stone-600 mb-0.5">
+                <span>Sponge Moisture:</span>
+                <span id="moistureValBadge" class="font-bold">9/10</span>
+              </div>
+              <input type="range" id="formMoisture" min="1" max="10" value="9" oninput="document.getElementById('moistureValBadge').innerText = this.value + '/10'" class="w-full accent-blue-600">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-0.5">Tasting Commentary & Sensory Notes:</label>
+          <textarea id="formNotes" required rows="2" placeholder="Describe the crumb structure, cream cheese balance, spice levels..." class="w-full p-1 text-xs border border-[#7F9DB9] rounded-sm bg-white"></textarea>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-[#D4D0C8]">
+          <div class="text-[10px] text-stone-500">
+            * Coordinates can be auto-picked by clicking the map
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="closeAddModal()" class="xp-button px-3 py-1 text-xs">Cancel</button>
+            <button type="submit" class="xp-button xp-button-primary px-4 py-1 text-xs">
+              <i class="ph-bold ph-check"></i> Publish Rating
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== WINDOWS XP SYSTEM TRAY / BALLOON ALERT ==================== -->
+  <div id="balloonTip" class="hidden xp-balloon">
+    <div class="flex items-start justify-between">
+      <div class="flex items-center gap-1.5 font-bold text-blue-900 text-[11px] mb-1">
+        <svg class="w-3.5 h-3.5"><use href="#cake-logo-art"/></svg>
+        <span>Carrot Cake Notification</span>
+      </div>
+      <button onclick="document.getElementById('balloonTip').classList.add('hidden')" class="text-stone-500 hover:text-black font-bold">×</button>
+    </div>
+    <div id="balloonText" class="text-stone-800 text-[11px] leading-tight whitespace-pre-line">
+      New evaluation successfully recorded into the registry.
+    </div>
+  </div>
+
+  <!-- ==================== WINDOWS XP TASKBAR ==================== -->
+  <div class="fixed bottom-0 left-0 right-0 h-8 xp-taskbar flex items-center justify-between px-1 z-40 select-none">
+    <div class="flex items-center gap-1 h-full">
+      <button onclick="openAddModal()" class="h-full px-3 xp-start-btn text-white flex items-center gap-1.5 font-bold text-xs tracking-wider">
+        <svg class="w-4 h-4"><use href="#cake-logo-art"/></svg>
+        <span class="text-[13px] lowercase font-extrabold italic font-sans">start</span>
+      </button>
+
+      <!-- Active Taskbar Tab -->
+      <div class="h-[22px] px-2.5 bg-[#1f50b5] border border-[#163884] rounded-sm flex items-center gap-1.5 text-white text-[11px] shadow-inner ml-1">
+        <svg class="w-3.5 h-3.5"><use href="#cake-logo-art"/></svg>
+        <span class="truncate max-w-[140px] font-medium">Carrot Cake Map</span>
+      </div>
+    </div>
+
+    <!-- System Tray -->
+    <div class="h-[22px] bg-[#0c59ba] border border-[#083e85] rounded px-2 flex items-center gap-2 text-white text-[11px] shadow-inner">
+      <svg class="w-3.5 h-3.5"><use href="#cake-logo-art"/></svg>
+      <i class="ph ph-shield-check text-green-300"></i>
+      <span id="xpClock" class="font-mono text-[10px]">12:00 PM</span>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // PRE-SEEDED DATA WITH MULTI-USER COMMUNITY REVIEWS
+    const INITIAL_CAFES = [
+      {
+        id: "c1",
+        cafe: "Lumberjack Cafe",
+        location: "Camberwell, SE5",
+        lat: 51.4735,
+        lng: -0.0910,
+        price: "£4.20",
+        reviews: [
+          {
+            author: "Emma C. (Admin)",
+            rating: 5.0,
+            frosting: 9,
+            moisture: 10,
+            notes: "Perfection. Supreme moist sponge, generous toasted walnuts, and deep tangy frosting with actual vanilla speckles.",
+            date: "Yesterday"
+          },
+          {
+            author: "David Miller",
+            rating: 4.8,
+            frosting: 8,
+            moisture: 9,
+            notes: "Great crumb structure and gentle nutmeg undertone. Frosting doesn't overwhelm the cake.",
+            date: "3 days ago"
+          },
+          {
+            author: "Sophie Turner",
+            rating: 4.9,
+            frosting: 9,
+            moisture: 9,
+            notes: "One of the best in South London. Outstanding moisture retention even in late afternoon.",
+            date: "1 week ago"
+          }
+        ]
+      },
+      {
+        id: "c2",
+        cafe: "Violet Cakes",
+        location: "Hackney, E8",
+        lat: 51.5435,
+        lng: -0.0580,
+        price: "£4.80",
+        reviews: [
+          {
+            author: "Clara S.",
+            rating: 4.7,
+            frosting: 10,
+            moisture: 8,
+            notes: "Benchmark cream cheese frosting. Tart, silky, and balanced with coarse shredded heritage carrots.",
+            date: "2 days ago"
+          },
+          {
+            author: "Emma C. (Admin)",
+            rating: 4.8,
+            frosting: 10,
+            moisture: 8,
+            notes: "The frosting tang is legendary here. Cake is slightly denser, but fantastic aroma of cinnamon.",
+            date: "5 days ago"
+          }
+        ]
+      },
+      {
+        id: "c3",
+        cafe: "Towpath Cafe",
+        location: "Regent's Canal, N1",
+        lat: 51.5365,
+        lng: -0.0825,
+        price: "£4.50",
+        reviews: [
+          {
+            author: "David Miller",
+            rating: 4.6,
+            frosting: 8,
+            moisture: 9,
+            notes: "Rustic canal-side treat. Extremely rich crumb loaded with pecans and warm spices.",
+            date: "Last Saturday"
+          }
+        ]
+      },
+      {
+        id: "c4",
+        cafe: "Prufrock Coffee",
+        location: "Farringdon, EC1N",
+        lat: 51.5205,
+        lng: -0.1085,
+        price: "£4.10",
+        reviews: [
+          {
+            author: "Sophie Turner",
+            rating: 4.5,
+            frosting: 8,
+            moisture: 8,
+            notes: "Very clean spice profile, matches an espresso perfectly.",
+            date: "Oct 18"
+          }
+        ]
+      }
+    ];
+
+    let cafes = [];
+    let selectedCafeId = null;
+    let map = null;
+    let markersLayer = null;
+
+    // CLOUD DATABASE VARIABLES
+    let db = null;
+    let auth = null;
+    let cloudSyncActive = false;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'carrot-cake-club';
+
+    // AUTHENTICATION STATE
+    let currentUser = {
+      isLoggedIn: true,
+      name: "Emma C. (Admin)",
+      role: "Admin / Master Taster",
+      badge: "Verified Taster"
+    };
+
+    let reviewFilterMode = 'all'; // 'all' | 'mine'
+
+    // WEB AUDIO API FOR RETRO SOUNDS
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+    }
+
+    function playXpBeep() {
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+      } catch (e) {}
+    }
+
+    function playXpChime() {
+      try {
+        initAudio();
+        const chords = [523.25, 659.25, 783.99, 1046.50];
+        chords.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.07));
+          gain.gain.setValueAtTime(0.06, audioCtx.currentTime + (idx * 0.07));
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (idx * 0.07) + 0.35);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + (idx * 0.07));
+          osc.stop(audioCtx.currentTime + (idx * 0.07) + 0.35);
+        });
+      } catch (e) {}
+    }
+
+    // ONLOAD INIT
+    window.onload = function() {
+      // Load saved user session
+      const savedUser = localStorage.getItem('carrot_cake_xp_user');
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+        } catch(e) {}
+      }
+
+      cafes = INITIAL_CAFES;
+      selectedCafeId = cafes[0]?.id || null;
+
+      updateAuthUI();
+      initMap();
+      renderReviewsPanel();
+      updateClock();
+      setInterval(updateClock, 1000);
+      updateTotalCounter();
+
+      // Initialize Cloud Sync
+      initCloudSync();
+    };
+
+    // CLOUD DATABASE SYNC ENGINE
+    async function initCloudSync() {
+      const statusEl = document.getElementById('cloudStatusBadge');
+
+      if (typeof __firebase_config === 'undefined' || !window._firebaseInit) {
+        if (statusEl) {
+          statusEl.innerText = "LOCAL MODE";
+          statusEl.className = "text-stone-600";
+        }
+        return;
+      }
+
+      try {
+        const { 
+          initializeApp, 
+          getAuth, 
+          signInWithCustomToken, 
+          signInAnonymously, 
+          getFirestore, 
+          collection, 
+          doc, 
+          setDoc, 
+          onSnapshot 
+        } = window._firebaseInit;
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        // Authenticate before query
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        const publicDataCol = collection(db, 'artifacts', appId, 'public', 'data', 'cafes');
+
+        // Realtime Listener
+        onSnapshot(publicDataCol, (snapshot) => {
+          if (!auth.currentUser) return;
+
+          if (snapshot.empty) {
+            // First time initialization: Seed initial cafes to cloud
+            INITIAL_CAFES.forEach(async (c) => {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'cafes', c.id);
+              await setDoc(docRef, {
+                ...c,
+                reviews: JSON.stringify(c.reviews)
+              });
+            });
+          } else {
+            const remoteCafes = [];
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+              let reviews = [];
+              try {
+                reviews = typeof data.reviews === 'string' ? JSON.parse(data.reviews) : (data.reviews || []);
+              } catch(e) {
+                reviews = [];
+              }
+              remoteCafes.push({
+                ...data,
+                id: docSnap.id,
+                reviews: reviews
+              });
+            });
+
+            if (remoteCafes.length > 0) {
+              cafes = remoteCafes;
+              if (!selectedCafeId || !cafes.find(c => c.id === selectedCafeId)) {
+                selectedCafeId = cafes[0].id;
+              }
+              renderPins();
+              renderReviewsPanel();
+              updateTotalCounter();
+              updateUserSpecificCount();
+            }
+          }
+
+          cloudSyncActive = true;
+          if (statusEl) {
+            statusEl.innerText = "CLOUD LIVE (SYNCED)";
+            statusEl.className = "text-emerald-700 font-bold";
+          }
+        }, (error) => {
+          console.error("Cloud sync snapshot error:", error);
+          if (statusEl) {
+            statusEl.innerText = "OFFLINE / LOCAL";
+            statusEl.className = "text-amber-700";
+          }
+        });
+
+      } catch (err) {
+        console.error("Failed to connect to cloud database:", err);
+        if (statusEl) {
+          statusEl.innerText = "OFFLINE / LOCAL";
+          statusEl.className = "text-amber-700";
+        }
+      }
+    }
+
+    // Save or update cafe to Cloud Database
+    async function saveCafeToCloud(cafeObj) {
+      if (!cloudSyncActive || !db || !auth || !auth.currentUser) return;
+      try {
+        const { doc, setDoc } = window._firebaseInit;
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'cafes', cafeObj.id);
+        await setDoc(docRef, {
+          id: cafeObj.id,
+          cafe: cafeObj.cafe,
+          location: cafeObj.location,
+          lat: cafeObj.lat,
+          lng: cafeObj.lng,
+          price: cafeObj.price,
+          reviews: JSON.stringify(cafeObj.reviews),
+          updatedAt: Date.now()
+        });
+      } catch (err) {
+        console.error("Error saving cafe to cloud:", err);
+      }
+    }
+
+    // AUTHENTICATION LOGIC
+    function updateAuthUI() {
+      const nameEl = document.getElementById('currentUserName');
+      const roleEl = document.getElementById('currentUserRole');
+      const badgeEl = document.getElementById('currentUserBadge');
+      const statusText = document.getElementById('authStatusText');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const authBtn = document.getElementById('authBtn');
+      const modalReviewingAs = document.getElementById('modalReviewingAs');
+
+      if (currentUser.isLoggedIn) {
+        nameEl.innerText = currentUser.name;
+        roleEl.innerText = currentUser.role;
+        badgeEl.innerText = currentUser.badge;
+        badgeEl.className = "text-[9px] bg-emerald-600 px-1.5 py-0.2 rounded font-mono uppercase tracking-wider text-white border border-emerald-400";
+        statusText.innerText = "Online";
+        logoutBtn.classList.remove('hidden');
+        authBtn.innerText = "Switch Account";
+        if (modalReviewingAs) modalReviewingAs.innerText = currentUser.name;
+      } else {
+        nameEl.innerText = "Guest Visitor";
+        roleEl.innerText = "Read-Only Observer";
+        badgeEl.innerText = "Not Authenticated";
+        badgeEl.className = "text-[9px] bg-stone-500 px-1.5 py-0.2 rounded font-mono uppercase tracking-wider text-stone-200 border border-stone-400";
+        statusText.innerText = "Guest Mode";
+        logoutBtn.classList.add('hidden');
+        authBtn.innerText = "Log On...";
+        if (modalReviewingAs) modalReviewingAs.innerText = "Guest (Unauthenticated)";
+      }
+
+      updateUserSpecificCount();
+    }
+
+    function updateUserSpecificCount() {
+      let count = 0;
+      if (currentUser.isLoggedIn) {
+        cafes.forEach(c => {
+          c.reviews.forEach(r => {
+            if (r.author.toLowerCase() === currentUser.name.toLowerCase() ||
+                (currentUser.name.includes('Emma') && r.author.includes('Emma'))) {
+              count++;
+            }
+          });
+        });
+      }
+      const el = document.getElementById('userTotalTastings');
+      if (el) el.innerText = count;
+    }
+
+    function openAuthModal() {
+      playXpBeep();
+      document.getElementById('authModal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      playXpBeep();
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function closeAccessDeniedModal() {
+      playXpBeep();
+      document.getElementById('accessDeniedModal').classList.add('hidden');
+    }
+
+    function loginAsPreset(name, role) {
+      currentUser = {
+        isLoggedIn: true,
+        name: name,
+        role: role,
+        badge: "Verified Taster"
+      };
+      localStorage.setItem('carrot_cake_xp_user', JSON.stringify(currentUser));
+      closeAuthModal();
+      updateAuthUI();
+      renderReviewsPanel();
+      playXpChime();
+      alertXp(`Welcome back, ${currentUser.name}.\nAuthorized as ${currentUser.role}.`);
+    }
+
+    function handleCustomLogin(e) {
+      e.preventDefault();
+      const handle = document.getElementById('customUserHandle').value.trim();
+      if (!handle) return;
+
+      currentUser = {
+        isLoggedIn: true,
+        name: handle,
+        role: "Club Reviewer",
+        badge: "Verified Member"
+      };
+      localStorage.setItem('carrot_cake_xp_user', JSON.stringify(currentUser));
+      closeAuthModal();
+      updateAuthUI();
+      renderReviewsPanel();
+      playXpChime();
+      alertXp(`Signed on as ${handle}.\nYou can now evaluate carrot cakes.`);
+    }
+
+    function handleLogout() {
+      playXpBeep();
+      currentUser = {
+        isLoggedIn: false,
+        name: "Guest Visitor",
+        role: "Public Visitor",
+        badge: "Guest"
+      };
+      localStorage.setItem('carrot_cake_xp_user', JSON.stringify(currentUser));
+      updateAuthUI();
+      renderReviewsPanel();
+      alertXp("You have logged off.\nYou can still browse community reviews.");
+    }
+
+    function checkAuthAndOpenAddModal() {
+      if (!currentUser.isLoggedIn) {
+        document.getElementById('accessDeniedModal').classList.remove('hidden');
+        playXpBeep();
+        return;
+      }
+      openAddModal();
+    }
+
+    function setReviewFilter(filter) {
+      playXpBeep();
+      reviewFilterMode = filter;
+      const allBtn = document.getElementById('filterAllBtn');
+      const mineBtn = document.getElementById('filterMineBtn');
+
+      if (filter === 'all') {
+        allBtn.classList.add('bg-white', 'font-bold');
+        mineBtn.classList.remove('bg-white', 'font-bold');
+      } else {
+        mineBtn.classList.add('bg-white', 'font-bold');
+        allBtn.classList.remove('bg-white', 'font-bold');
+      }
+
+      renderReviewsPanel();
+    }
+
+    function updateClock() {
+      const now = new Date();
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      document.getElementById('xpClock').innerText = `${hours}:${minutes} ${ampm}`;
+    }
+
+    // MAP INITIALIZATION
+    function initMap() {
+      map = L.map('map', {
+        zoomControl: true
+      }).setView([51.5200, -0.0800], 12);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; CartoDB &copy; OpenStreetMap',
+        maxZoom: 19
+      }).addTo(map);
+
+      markersLayer = L.layerGroup().addTo(map);
+      renderPins();
+
+      // Click on map to populate coordinates in wizard
+      map.on('click', function(e) {
+        document.getElementById('formLat').value = e.latlng.lat.toFixed(5);
+        document.getElementById('formLng').value = e.latlng.lng.toFixed(5);
+        playXpBeep();
+        alertXp(`Coordinates captured from map:\n${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
+      });
+
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 250);
+    }
+
+    // RENDER PINS USING THE USER'S CARROT CAKE SVG ART
+    function renderPins() {
+      markersLayer.clearLayers();
+
+      cafes.forEach(cafe => {
+        const avg = getAverageRating(cafe);
+
+        const customIcon = L.divIcon({
+          className: 'custom-cake-pin-wrapper',
+          html: `
+            <div class="custom-marker-cake">
+              <svg class="w-10 h-10 filter drop-shadow"><use href="#cake-logo-art"/></svg>
+            </div>
+          `,
+          iconSize: [44, 44],
+          iconAnchor: [22, 38],
+          popupAnchor: [0, -32]
+        });
+
+        const marker = L.marker([cafe.lat, cafe.lng], { icon: customIcon });
+
+        const popupContent = `
+          <div style="font-family: Tahoma, sans-serif; min-width: 170px; padding: 2px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <svg style="width:20px; height:20px;"><use href="#cake-logo-art"/></svg>
+              <strong style="font-size:12px; color:#003399;">${cafe.cafe}</strong>
+            </div>
+            <div style="font-size:11px; color:#555;">${cafe.location}</div>
+            <div style="margin:6px 0; font-weight:bold; color:#0055ea; font-size:12px;">
+              ★ ${avg} / 5.0 (${cafe.reviews.length} reviews)
+            </div>
+            <button onclick="selectCafeAndHighlight('${cafe.id}')" style="background: linear-gradient(180deg,#fff,#ece9d8); border:1px solid #7F9DB9; padding:2px 8px; font-size:11px; cursor:pointer; width:100%; border-radius:2px;">
+              View All Reviews
+            </button>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        marker.on('click', () => {
+          playXpBeep();
+          selectCafeAndHighlight(cafe.id);
+        });
+
+        markersLayer.addLayer(marker);
+      });
+    }
+
+    function selectCafeAndHighlight(id) {
+      selectedCafeId = id;
+      renderReviewsPanel();
+      const cafe = cafes.find(c => c.id === id);
+      if (cafe) {
+        map.panTo([cafe.lat, cafe.lng]);
+      }
+    }
+
+    function renderReviewsPanel() {
+      const cafe = cafes.find(c => c.id === selectedCafeId) || cafes[0];
+      if (!cafe) return;
+
+      const avg = getAverageRating(cafe);
+      document.getElementById('panelCafeName').innerText = cafe.cafe;
+      document.getElementById('panelCafeLocation').innerText = `${cafe.location} • ${cafe.price}`;
+      document.getElementById('panelCafeRating').innerText = `${avg} ★`;
+      document.getElementById('panelReviewsCount').innerText = `${cafe.reviews.length} evaluations logged`;
+
+      const container = document.getElementById('reviewsContainer');
+
+      // Filter reviews if 'mine' selected
+      let filteredReviews = cafe.reviews;
+      if (reviewFilterMode === 'mine') {
+        if (!currentUser.isLoggedIn) {
+          filteredReviews = [];
+        } else {
+          filteredReviews = cafe.reviews.filter(r => 
+            r.author.toLowerCase() === currentUser.name.toLowerCase() ||
+            (currentUser.name.includes('Emma') && r.author.includes('Emma'))
+          );
+        }
+      }
+
+      if (filteredReviews.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-6 text-stone-500 text-xs">
+            <i class="ph ph-chat-circle-dots text-xl mb-1 text-stone-400"></i>
+            <div>${reviewFilterMode === 'mine' ? 'You have not evaluated this cafe yet.' : 'No evaluations recorded for this spot.'}</div>
+            <button onclick="openAddModalForCurrentCafe()" class="xp-button mt-2 text-[11px] py-1 px-2 font-bold">
+              + Be the First to Review
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filteredReviews.map(r => {
+        const isSelf = currentUser.isLoggedIn && (
+          r.author.toLowerCase() === currentUser.name.toLowerCase() ||
+          (currentUser.name.includes('Emma') && r.author.includes('Emma'))
+        );
+
+        return `
+          <div class="pt-2 first:pt-0 ${isSelf ? 'bg-amber-50/70 p-1.5 rounded border border-amber-300/60' : ''}">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-1.5">
+                <div class="w-5 h-5 rounded-full ${isSelf ? 'bg-amber-600 text-white font-bold' : 'bg-amber-500/20 text-amber-800'} border border-amber-600/30 flex items-center justify-center text-[10px]">
+                  ${r.author.charAt(0)}
+                </div>
+                <span class="font-bold text-stone-900 text-xs">
+                  ${r.author}
+                  ${isSelf ? '<span class="text-[9px] bg-amber-200 text-amber-900 px-1 rounded ml-1 font-mono">YOU</span>' : ''}
+                </span>
+              </div>
+              <span class="font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded text-[10px]">
+                ${r.rating} / 5.0 ★
+              </span>
+            </div>
+
+            <div class="bg-white p-2 border border-[#D8D4C5] rounded text-stone-800 text-[11px] leading-relaxed shadow-sm">
+              "${r.notes}"
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] text-stone-500 mt-1 px-0.5">
+              <div class="flex items-center gap-2">
+                <span>Tang: <strong>${r.frosting}/10</strong></span>
+                <span>•</span>
+                <span>Moisture: <strong>${r.moisture}/10</strong></span>
+              </div>
+              <span>${r.date}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function centerMapOnCurrentView() {
+      playXpBeep();
+      if (cafes.length > 0) {
+        const group = new L.featureGroup(markersLayer.getLayers());
+        map.fitBounds(group.getBounds().pad(0.2));
+      }
+    }
+
+    function openAddModalForCurrentCafe() {
+      if (!currentUser.isLoggedIn) {
+        document.getElementById('accessDeniedModal').classList.remove('hidden');
+        playXpBeep();
+        return;
+      }
+      const current = cafes.find(c => c.id === selectedCafeId);
+      if (current) {
+        document.getElementById('formCafeName').value = current.cafe;
+        document.getElementById('formLocation').value = current.location;
+        document.getElementById('formLat').value = current.lat;
+        document.getElementById('formLng').value = current.lng;
+        document.getElementById('formPrice').value = current.price;
+      }
+      openAddModal();
+    }
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      if (!currentUser.isLoggedIn) {
+        alertXp("Access Denied: Please log on before publishing evaluations.");
+        return;
+      }
+
+      const cafeName = document.getElementById('formCafeName').value.trim();
+      const location = document.getElementById('formLocation').value.trim();
+      const lat = parseFloat(document.getElementById('formLat').value);
+      const lng = parseFloat(document.getElementById('formLng').value);
+      const rating = parseFloat(document.getElementById('formOverall').value);
+      const frosting = parseFloat(document.getElementById('formFrosting').value);
+      const moisture = parseFloat(document.getElementById('formMoisture').value);
+      const price = document.getElementById('formPrice').value.trim() || '£4.50';
+      const notes = document.getElementById('formNotes').value.trim();
+
+      const newReview = {
+        author: currentUser.name,
+        rating: rating,
+        frosting: frosting,
+        moisture: moisture,
+        notes: notes,
+        date: "Just now"
+      };
+
+      let targetCafe = null;
+
+      // Check if cafe already exists
+      const existing = cafes.find(c => c.cafe.toLowerCase() === cafeName.toLowerCase());
+      if (existing) {
+        existing.reviews.unshift(newReview);
+        selectedCafeId = existing.id;
+        targetCafe = existing;
+      } else {
+        const newCafe = {
+          id: `c_${Date.now()}`,
+          cafe: cafeName,
+          location: location,
+          lat: lat,
+          lng: lng,
+          price: price,
+          reviews: [newReview]
+        };
+        cafes.unshift(newCafe);
+        selectedCafeId = newCafe.id;
+        targetCafe = newCafe;
+      }
+
+      // Sync updated cafe to the cloud database
+      await saveCafeToCloud(targetCafe);
+
+      renderPins();
+      renderReviewsPanel();
+      updateTotalCounter();
+      updateUserSpecificCount();
+      closeAddModal();
+      playXpChime();
+
+      document.getElementById('tastingForm').reset();
+      document.getElementById('starValBadge').innerText = "4.8 / 5.0 ★";
+
+      // Fly to pin
+      if (targetCafe) {
+        map.flyTo([targetCafe.lat, targetCafe.lng], 14, { duration: 0.8 });
+      }
+
+      alertXp(`Evaluation published for "${targetCafe.cafe}".\nSynchronized to cloud database across all devices.`);
+    }
+
+    function showXpAbout() {
+      playXpBeep();
+      alertXp("Carrot Cake XP [Version 5.1.2600]\n(C) 2001-2026 Carrot Cake Enthusiasts Club.\n\nHand-crafted review engine for rating cream cheese frosting, sponge moisture, and crumb density across cafes.");
+    }
+
+    function updateTotalCounter() {
+      const el = document.getElementById('totalTastingsCount');
+      if (el) {
+        const total = cafes.reduce((sum, c) => sum + (c.reviews ? c.reviews.length : 0), 0);
+        el.innerText = total;
+      }
+    }
+
+    function getAverageRating(cafe) {
+      if (!cafe.reviews || cafe.reviews.length === 0) return "N/A";
+      const total = cafe.reviews.reduce((acc, r) => acc + r.rating, 0);
+      return (total / cafe.reviews.length).toFixed(1);
+    }
+
+    function openAddModal() {
+      playXpBeep();
+      document.getElementById('addModal').classList.remove('hidden');
+    }
+
+    function alertXp(message) {
+      const balloon = document.getElementById('balloonTip');
+      const text = document.getElementById('balloonText');
+      if (balloon && text) {
+        text.innerText = message;
+        balloon.classList.remove('hidden');
+        clearTimeout(window.balloonTimeout);
+        window.balloonTimeout = setTimeout(() => {
+          balloon.classList.add('hidden');
+        }, 6000);
+      }
+    }
+  </script>
+</body>
+</html>
